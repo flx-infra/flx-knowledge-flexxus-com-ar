@@ -28,7 +28,7 @@ services:
         loki-url: ${LOKI_URL:?falta LOKI_URL}
 
   kb-api:
-    image: ${KB_IMAGE:-fabreguesm/flx-knowledge}:${KB_TAG:-0.7.1}
+    image: ${KB_IMAGE:-fabreguesm/flx-knowledge}:${KB_TAG:-0.8.0}
     hostname: ${KB_HOSTNAME:-flxknowledge-flexxus-com-ar}
     ports:
       - "${KB_API_PORT:-7003}:8000"
@@ -37,10 +37,15 @@ services:
       - traefik
     environment:
       - DATABASE_URL=postgresql://${KB_DB_USER}:${KB_DB_PASSWORD}@kb-postgres:5432/${KB_DB_NAME:-flx_knowledge}
-      - KB_PROVIDER_API_KEY=${KB_PROVIDER_API_KEY:-}
-      - KB_BOOTSTRAP_ADMIN_KEY=${KB_BOOTSTRAP_ADMIN_KEY:-}
-      - KB_LLM_PROVIDER=${KB_LLM_PROVIDER:-gemini}
-      - KB_EMBEDDING_PROVIDER=${KB_EMBEDDING_PROVIDER:-gemini}
+      - KB_BOOTSTRAP_ADMIN_KEY=${KB_BOOTSTRAP_ADMIN_KEY}
+      - KB_PUBLIC_URL=${KB_PUBLIC_URL}
+      - KB_CHAT_PROJECTS=${KB_CHAT_PROJECTS}
+      - KB_CHAT_ANONYMOUS=${KB_CHAT_ANONYMOUS}
+      - KB_CHAT_PROVIDER=${KB_CHAT_PROVIDER:-groq}
+      - KB_EMBEDDING_PROVIDER=${KB_EMBEDDING_PROVIDER}
+      - KB_LLM_PROVIDER=${KB_LLM_PROVIDER}
+      - KB_GROQ_API_KEY=${KB_GROQ_API_KEY}
+      - KB_GEMINI_API_KEY=${KB_GEMINI_API_KEY}
     deploy:
       placement:
         constraints:
@@ -50,6 +55,28 @@ services:
         limits:
           memory: 768M
         reservations:
+          memory: 128M
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL:?falta LOKI_URL}
+
+  kb-ui:
+    image: ${KB_UI_IMAGE:-fabreguesm/flx-knowledge-ui}:${KB_TAG:-0.8.0}
+    ports:
+      - "${KB_UI_PORT:-7005}:80"
+    networks:
+      - kb
+      - traefik
+    environment:
+      - KB_API_URL=http://kb-api:8000
+    deploy:
+      placement:
+        constraints:
+          - "${NODE:?falta NODE, debe ser un worker concreto}"
+          - node.role == worker
+      resources:
+        limits:
           memory: 128M
     logging:
       driver: loki
