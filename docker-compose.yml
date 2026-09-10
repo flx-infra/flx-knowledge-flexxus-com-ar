@@ -6,18 +6,18 @@ services:
     networks:
       - kb
     ports:
-      - '${KB_DB_PORT:-7004}:5432'
+      - '7004:5432'
     environment:
-      - POSTGRES_DB=${KB_DB_NAME:-flx_knowledge}
-      - POSTGRES_USER=${KB_DB_USER:?falta KB_DB_USER}
-      - POSTGRES_PASSWORD=${KB_DB_PASSWORD:?falta KB_DB_PASSWORD}
+      - POSTGRES_DB=flx_knowledge
+      - POSTGRES_USER=${KB_DB_USER}
+      - POSTGRES_PASSWORD=${KB_DB_PASSWORD}
       - POSTGRES_INITDB_ARGS=--encoding=UTF8
     volumes:
       - 'kb_pgdata:/var/lib/postgresql'
     deploy:
       placement:
         constraints:
-          - "${NODE:?falta NODE, debe ser un worker concreto}"
+          - "${NODE}"
           - node.role == worker
       resources:
         reservations:
@@ -25,13 +25,13 @@ services:
     logging:
       driver: loki
       options:
-        loki-url: ${LOKI_URL:?falta LOKI_URL}
+        loki-url: ${LOKI_URL}
 
   kb-api:
-    image: ${KB_IMAGE:-fabreguesm/flx-knowledge}:${KB_TAG:-0.9.2}
-    hostname: ${KB_HOSTNAME:-flxknowledge-flexxus-com-ar}
+    image: fabreguesm/flx-knowledge:0.9.3
+    hostname: flxknowledge-flexxus-com-ar
     ports:
-      - "${KB_API_PORT:-7003}:8000"
+      - "7003:8000"
     networks:
       - kb
       - traefik
@@ -49,7 +49,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "${NODE:?falta NODE, debe ser un worker concreto}"
+          - "${NODE}"
           - node.role == worker
       resources:
         limits:
@@ -59,12 +59,12 @@ services:
     logging:
       driver: loki
       options:
-        loki-url: ${LOKI_URL:?falta LOKI_URL}
+        loki-url: ${LOKI_URL}
 
   kb-ui:
-    image: ${KB_UI_IMAGE:-fabreguesm/flx-knowledge-ui}:${KB_TAG:-0.9.2}
+    image: fabreguesm/flx-knowledge-ui:0.9.3
     ports:
-      - "${KB_UI_PORT:-7005}:80"
+      - "7005:80"
     networks:
       - kb
       - traefik
@@ -73,7 +73,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "${NODE:?falta NODE, debe ser un worker concreto}"
+          - "${NODE}"
           - node.role == worker
       resources:
         limits:
@@ -81,11 +81,11 @@ services:
     logging:
       driver: loki
       options:
-        loki-url: ${LOKI_URL:?falta LOKI_URL}
+        loki-url: ${LOKI_URL}
 
 volumes:
   kb_pgdata:
-    name: "${SERVICE_NAME:?falta SERVICE_NAME}_pgdata"
+    name: "${SERVICE_NAME}_pgdata"
 
 networks:
   kb:
