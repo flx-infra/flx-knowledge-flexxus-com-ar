@@ -3,6 +3,12 @@ version: '3.6'
 services:
   kb-postgres:
     image: pgvector/pgvector:0.8.2-pg18
+    command:
+      - postgres
+      - -c
+      - effective_cache_size=1GB
+      - -c
+      - random_page_cost=1.1
     networks:
       - kb
     ports:
@@ -28,24 +34,23 @@ services:
         loki-url: ${LOKI_URL}
 
   kb-api:
-    image: fabreguesm/flx-knowledge:0.9.3
+    # El tag lo mueve el pipeline. `KB_IMAGE_TAG` clava una versión para un
+    # rollback. Al redesplegar hay que tildar "Re-pull image": ver DEPLOY.md.
+    image: fabreguesm/flx-knowledge:${KB_IMAGE_TAG:-latest}
     hostname: flxknowledge-flexxus-com-ar
     ports:
       - "7003:8000"
     networks:
       - kb
       - traefik
+    # Sólo lo que el panel de configuración NO puede manejar. El resto —chat,
+    # proveedores y API keys— se carga desde Configuración › Servicio y hay que
+    # cargarlo ANTES de aplicar este stack: ver DEPLOY.md.
     environment:
       - DATABASE_URL=postgresql://${KB_DB_USER}:${KB_DB_PASSWORD}@kb-postgres:5432/${KB_DB_NAME:-flx_knowledge}
       - KB_BOOTSTRAP_ADMIN_KEY=${KB_BOOTSTRAP_ADMIN_KEY}
       - KB_PUBLIC_URL=${KB_PUBLIC_URL}
-      - KB_CHAT_PROJECTS=${KB_CHAT_PROJECTS}
-      - KB_CHAT_ANONYMOUS=${KB_CHAT_ANONYMOUS}
-      - KB_CHAT_PROVIDER=${KB_CHAT_PROVIDER:-groq}
       - KB_EMBEDDING_PROVIDER=${KB_EMBEDDING_PROVIDER}
-      - KB_LLM_PROVIDER=${KB_LLM_PROVIDER}
-      - KB_GROQ_API_KEY=${KB_GROQ_API_KEY}
-      - KB_GEMINI_API_KEY=${KB_GEMINI_API_KEY}
     deploy:
       placement:
         constraints:
@@ -62,7 +67,9 @@ services:
         loki-url: ${LOKI_URL}
 
   kb-ui:
-    image: fabreguesm/flx-knowledge-ui:0.9.3
+    # La misma variable que kb-api: las dos salen del mismo commit y el contrato
+    # SSE lo definen entre ellas.
+    image: fabreguesm/flx-knowledge-ui:${KB_IMAGE_TAG:-latest}
     ports:
       - "7005:80"
     networks:
